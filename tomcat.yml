@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vproapp
+  labels:
+    app: vproapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vproapp
+  template:
+    metadata:
+      labels:
+        app: vproapp
+    spec:
+      containers:
+        - name: vproapp #from docker hub
+          image: vprofile/profileapp:V1
+          ports:
+            - name: vproapp-port
+              containerPort: 8080
+      initContainers: ##first we have to run vprodb. It is the dependency for the tomcat
+        - name: init-mydb
+          image: busybox
+          command: ['sh','-c','until nslookup vprodb; do echo waiting for mydb; sleep 3; done;']
+        - name: init-memcached
+          image: busybox
+          command: [ 'sh','-c','until nslookup vprocached; do echo waiting for mydb; sleep 3; done;' ]
