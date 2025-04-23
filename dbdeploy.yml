@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vprodb
+  labels:
+    app: vprodb
+spec:
+  selector:
+    matchLabels:
+      app: vprodb
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: vprodb
+    spec:
+      containers:
+        - name: vprodb
+          image: vrpofile/vprofiledb:v1
+          args:
+            - "--ignore-db-dir=lost+found" #this dir is created during setup so error may arise while running the kubes.
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: vpro-data #same name as mentioned below.
+          ports:
+            - name: vprodb-port
+              containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: db-pass #from app-secret.yaml
+      nodeSelector:
+        zone: us-east-2a #its label in the kubernetes. Must be in same zone
+      volumes:
+        - name: vpro-data
+          awsElasticBlockStore: #it will not attach, we need to give the tags Key=KubenetesCluster value=nameof kubernates
+            volumeID: vol-ioifjka #copy from ebs
+            fsType: ext4
+
